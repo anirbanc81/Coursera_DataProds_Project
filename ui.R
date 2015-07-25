@@ -26,12 +26,15 @@ shinyUI(fluidPage(
         column(9, tabsetPanel(
             tabPanel("Data Explorer", p("\n\n"),
                 fluidRow(
-                    column(4, uiOutput("animXVar") ),
-                    column(8, align="center", uiOutput("animSlider") )
+                    column(3, uiOutput("animXVar") ),
+                    column(9, align="center", uiOutput("animSlider") )
                 ),
-                fluidRow(column(12, align="center", h4(textOutput("anim_title")),
-                        htmlOutput("userAnim")
-                    )
+                fluidRow(
+                    column(3, uiOutput("corrChartType")),
+                    column(9, align="center", h4(textOutput("anim_title")),
+                        conditionalPanel(condition = "input.corrChart == 'heatmap'",
+                            plotOutput("userAnim1")),
+                        htmlOutput("userAnim2"))
                 ),
                 fluidRow(column(12, align="center",
                         h4("6-Number Summary of All Variables in the Data"),
@@ -69,7 +72,7 @@ shinyUI(fluidPage(
                   (using your own data instead of sample data, creating and saving a 
                   workflow for reuse, etc.).", br(),
                   "You can also refer to this ",
-                  a(strong("presentation"), href="http://anirbanc81.github.io/interactivestats"),
+                  a(strong("presentation"), href="http://anirbanc81.github.io/Coursera_DataProds_Project/InteractiveStats"),
                   " for a summary of available features, planned features with tentative 
                   release schedule, and general info on our initiative."),
                 br(), br(),

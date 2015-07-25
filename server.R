@@ -87,11 +87,10 @@ shinyServer(
         })
         
         numericVarNames <- reactive({
-            colnames(dataSelect())[sapply(dataSelect(), FUN=function(x) {class(x)[1]})
-                                        %in% c("numeric", "integer")]
+            colnames(dataSelect())[sapply(dataSelect(), FUN=is.numeric)]
         })
         output$animXVar <- renderUI({
-            if (input$dSet == "state" && input$yVar != "state") {
+            if (input$dSet == "state" && input$yVar != "state" && input$corrChart == "geo") {
                 selectInput("animX", "Animate Plot By", multiple=FALSE,
                             choices=numericVarNames()[numericVarNames() != input$yVar]) }
         })
@@ -109,7 +108,7 @@ shinyServer(
                 round(max(dataSelect()[, animColNum()]), 2) }
         })
         output$animSlider <- renderUI({
-            if (input$dSet == "state" && input$yVar != "state") {
+            if (input$dSet == "state" && input$yVar != "state" && input$corrChart == "geo") {
                 sliderInput("animXVals", "Select Value or Press Play to Animate",
                     min=animXMin(), max=animXMax(), value=animXMax(),
                     step=(animXMax() - animXMin())/10, animate=TRUE
@@ -119,16 +118,39 @@ shinyServer(
             input$animXVals
         })
         
+        output$corrChartType <- renderUI({
+            if (input$dSet=="state" && input$yVar!="state") {
+                selectInput("corrChart", "Select Chart Type", multiple=FALSE,
+                            choices=c("Geo Chart" = "geo",
+                                      "Correlation Heatmap" = "heatmap"))
+            } else if (input$dSet != "state") {
+                selectInput("corrChart", "Select Chart Type", multiple=FALSE,
+                            choices=c("Correlation Bubble Chart" = "bubble",
+                                      "Correlation Heatmap" = "heatmap"))
+            }
+        })
+        
         output$anim_title <- renderText({
             if (input$dSet == "state" && input$yVar != "state") {
-                paste("Distribution of", input$yVar, "by state, filtered by", input$animX)
+                if (input$corrChart == "geo") {
+                    paste("Distribution of", input$yVar, "by state, filtered by", input$animX)
+                } else if (input$corrChart == "heatmap") {
+                    paste("Spearman Correlation of Variables (numeric only) in ", input$dSet)
+                }
             } else if (input$dSet == "state" && input$yVar == "state") {
                 paste("Select another variable. Cannot map State to State!")
             } else if (input$dSet != "state" && length(numericVarNames()) > 0) {
                 paste("Spearman Correlation of Variables (numeric only) in ", input$dSet)
             } else {paste("Data has only categorical variables")}
         })
-        output$userAnim <- renderGvis({
+        output$userAnim1 <- renderPlot({
+            if(input$dSet!="" && input$corrChart=="heatmap" && length(numericVarNames())>0) {
+                heatmap(abs(cor( dataSelect()[, numericVarNames()], method="spearman",
+                                 use="complete.obs" )))
+            }
+        })
+        output$userAnim2 <- renderGvis({
+        if(input$dSet!="" && (input$corrChart=="geo" || input$corrChart=="bubble")) {
             if (input$dSet == "state" && input$yVar != "state") {
                 rawData <- dataSelect()
                 plotData <- rawData[rawData[, animColNum()] <= animSliderVal(), ]
@@ -160,6 +182,7 @@ shinyServer(
                                  height=400)
                 )
             }
+        }
         })
         output$summDSet <- renderPrint({ summary(dataSelect()) })
         
